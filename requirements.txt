@@ -1,0 +1,9 @@
+numpy
+scipy
+scikit-learn
+
+dwave-system
+dwave-qbsolv
+dwave-neal
+amplify
+matplotlib
