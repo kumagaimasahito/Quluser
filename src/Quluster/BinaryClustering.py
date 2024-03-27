@@ -1,12 +1,13 @@
-from pyqubo import Array, Constraint
+from pyqubo import Array
 from scipy.spatial import distance
-from .utils import min_max, standardization, BaseSolver, pyqubo_to_qubo, measure
+import numpy as np
+from .utils import min_max, standardization, Base, pyqubo_to_qubo, measure
 
-class BinaryClustering(BaseSolver):
+class BinaryClustering(Base):
     @measure
     def __init__(self, *, data, metric='euclidean'):
         self.data = data
-        self.leng = len(data)
+        self.n_points = len(data)
         self.dist = distance.cdist(data, data, metric=metric)
         self.timing = {}
 
@@ -14,30 +15,35 @@ class BinaryClustering(BaseSolver):
     def set_pyqubo(self, scaling="invalid"):
         dist = self._scale_dist(scaling=scaling)
         
-        spin = Array.create('spin', shape=self.leng, vartype='SPIN')
-        H = 0.5 * sum(dist[i,j] * spin[i] * spin[j] for i in range(self.leng) for j in range(self.leng))
+        spin = Array.create('spin', shape=self.n_points, vartype='SPIN')
+        H = 0.5 * sum(dist[i,j] * spin[i] * spin[j] for i in range(self.n_points) for j in range(self.leng))
         model = H.compile()
-        self.qubo, _ = model.to_qubo()
-        self.qubo = pyqubo_to_qubo(self.qubo)
-        return self.qubo
+        qubo_by_pyqubo, _ = model.to_qubo()
+        self.indexed_qubo = self.pyqubo_to_qubo(qubo_by_pyqubo)
 
     @measure
-    def set_qubo(self, scaling="invalid"):
+    def set_qubo(self, scaling="invalid", mode="numpy"):
         dist = self._scale_dist(scaling=scaling)
 
-        self.qubo = {
-            (i,j) :
-            4*dist[i,j] if (i<j)
-            else (-2)*sum(
+        if mode == "iterance":
+            self.indexed_qubo = np.array([
                 [
-                    dist[i,k] 
-                    for k in range(0,self.leng)
+                    4*dist[i,j] if (i<j)
+                    else (-2)*sum(
+                        [
+                            dist[i,k] 
+                            for k in range(0,self.n_points)
+                        ]
+                    ) if i==j
+                    else 0
+                    for j in range(0,self.n_points) 
                 ]
-            )
-            for i in range(0,self.leng) 
-            for j in range(i,self.leng)
-        }
-        return self.qubo
+                for i in range(0,self.n_points)
+            ])
+        else:
+            diag = np.diag(np.sum(dist, axis=0))
+            triu = np.triu(dist, k=1)
+            self.indexed_qubo = -2 * diag + 4 * triu 
 
     def _scale_dist(self, scaling=None):
         dist = self.dist

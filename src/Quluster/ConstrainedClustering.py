@@ -15,7 +15,8 @@ class ConstrainedClustering(CombinatorialClustering):
             for (i, j) in must_link_instances
             for inc in range(3)
         }
-        self.qubo = self._merge_dicts(self.qubo, self.must_link_qubo)
+        # self.qubo = self._merge_dicts(self.qubo, self.must_link_qubo)
+        self.indexed_qubo += self.qubo_to_indexed_qubo(self.must_link_qubo)
 
     @measure
     def add_cannot_link_to_qubo(self, cannot_link_instances, weight_cannot_link=None):
@@ -25,7 +26,8 @@ class ConstrainedClustering(CombinatorialClustering):
             for k in range(self.n_clusters) 
             for (i, j) in cannot_link_instances
         }
-        self.qubo = self._merge_dicts(self.qubo, self.cannot_link_qubo)
+        # self.qubo = self._merge_dicts(self.qubo, self.cannot_link_qubo)
+        self.indexed_qubo += self.qubo_to_indexed_qubo(self.cannot_link_qubo)
 
     @measure
     def add_partition_level_to_qubo(self, partition_level_instances, weight_partition_level=None):
@@ -37,7 +39,8 @@ class ConstrainedClustering(CombinatorialClustering):
             for i in instances
             if k != m
         }
-        self.qubo = self._merge_dicts(self.qubo, self.partition_level_qubo)
+        # self.qubo = self._merge_dicts(self.qubo, self.partition_level_qubo)
+        self.indexed_qubo += self.qubo_to_indexed_qubo(self.partition_level_qubo)
 
     @measure
     def add_non_partition_level_to_qubo(self, non_partition_level_instances, weight_non_partition_level=None):
@@ -47,7 +50,8 @@ class ConstrainedClustering(CombinatorialClustering):
             for m, instances in non_partition_level_instances.items()
             for i in instances
         }
-        self.qubo = self._merge_dicts(self.qubo, self.non_partition_level_qubo)
+        # self.qubo = self._merge_dicts(self.qubo, self.non_partition_level_qubo)
+        self.indexed_qubo += self.qubo_to_indexed_qubo(self.non_partition_level_qubo)
     
     @measure
     def add_balanced_sizes_to_qubo(self, weight_balanced_size=None):
@@ -58,25 +62,27 @@ class ConstrainedClustering(CombinatorialClustering):
             for j in range(i, self.n_points)
             for k in range(self.n_clusters)
         }
-        self.qubo = self._merge_dicts(self.qubo, self.balanced_sizes_qubo)
+        # self.qubo = self._merge_dicts(self.qubo, self.balanced_sizes_qubo)
+        self.indexed_qubo += self.qubo_to_indexed_qubo(self.balanced_sizes_qubo)
 
     @measure
     def add_limited_sizes_to_qubo(self, limited_sizes, weight_limited_sizes=None):
         self.weight_limited_sizes = self.lam if weight_limited_sizes == None else weight_limited_sizes
         self.limited_sizes_qubo = {
-            ((i, k), (j, k)) : self.weight_limited_sizes*(1-2*limited_sizes) if i == j else 2*self.weight_limited_sizes
+            ((i, k), (j, k)) : self.weight_limited_sizes*(1-2*limited_sizes[k]) if i == j else 2*self.weight_limited_sizes
             for i in range(self.n_points)
             for j in range(i, self.n_points)
             for k in range(self.n_clusters)
         }
-        self.qubo = self._merge_dicts(self.qubo, self.limited_sizes_qubo)
+        # self.qubo = self._merge_dicts(self.qubo, self.limited_sizes_qubo)
+        self.indexed_qubo += self.qubo_to_indexed_qubo(self.limited_sizes_qubo)
 
-    def _merge_dicts(self, a, b, func=lambda x, y: x+y):
-        d1 = a.copy()
-        d2 = b.copy()
-        d1 = {
-            k: func(d2[k], v) if k in d2 else v 
-            for k, v in d1.items()
-        }
-        d2.update(d1)
-        return d2
+    # def _merge_dicts(self, a, b, func=lambda x, y: x+y):
+    #     d1 = a.copy()
+    #     d2 = b.copy()
+    #     d1 = {
+    #         k: func(d2[k], v) if k in d2 else v 
+    #         for k, v in d1.items()
+    #     }
+    #     d2.update(d1)
+    #     return d2

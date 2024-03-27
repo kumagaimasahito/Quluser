@@ -1,6 +1,6 @@
-from .utils import BaseSolver, measure
+from .utils import Base, measure
 
-class ConsensusClustering(BaseSolver):
+class ConsensusClustering(Base):
     @measure
     def __init__(self, *, clusterings, n_clusters):
         self.clusterings = clusterings
@@ -43,7 +43,8 @@ class ConsensusClustering(BaseSolver):
                 for a in range(0,self.n_clusters)
                 for b in range(a,self.n_clusters)
             }
-            return self.qubo
+            self.qubo = self._omit_zero_coefficients(self.qubo) # 非ゼロ要素だけのQUBO
+            self.indexed_qubo = self.qubo_to_indexed_qubo()
         elif model=="partition_difference":
             self.qubo = {
                 ((i,a),(j,b)) :
@@ -57,31 +58,35 @@ class ConsensusClustering(BaseSolver):
                 for a in range(0,self.n_clusters)
                 for b in range(a,self.n_clusters)
             }
-            return self.qubo
+            self.qubo = self._omit_zero_coefficients(self.qubo) # 非ゼロ要素だけのQUBO
+            self.indexed_qubo = self.qubo_to_indexed_qubo()
         else:
             print("Please select the Ising model of pairwise_similarity-based or partition_difference")
 
-    @measure
-    def set_pubo(self, model):
-        if model=="pairwise_similarity-based":
-            self.qubo = {
-                ((i,a),(j,a)) : 1-self.similarity_matrix[(i,j)]
-                for i in range(0,self.n_points-1) 
-                for j in range(i+1,self.n_points)
-                for a in range(0,self.n_clusters)
-            }
-            return self.qubo
-        elif model=="partition_difference":
-            self.qubo = {
-                ((i,a),(j,b)) :
-                1-self.similarity_matrix[(i,j)] if (i<j and a==b)
-                else self.similarity_matrix[(i,j)] if  (i<j and a<b)
-                else 0
-                for i in range(0,self.n_points-1) 
-                for j in range(i+1,self.n_points)
-                for a in range(0,self.n_clusters)
-                for b in range(a,self.n_clusters)
-            }
-            return self.qubo
-        else:
-            print("Please select the Ising model of pairwise_similarity-based or partition_difference")
+    # @measure
+    # def set_pubo(self, model):
+    #     if model=="pairwise_similarity-based":
+    #         self.qubo = {
+    #             ((i,a),(j,a)) : 1-self.similarity_matrix[(i,j)]
+    #             for i in range(0,self.n_points-1) 
+    #             for j in range(i+1,self.n_points)
+    #             for a in range(0,self.n_clusters)
+    #         }
+    #         self.indexed_qubo = self.qubo_to_indexed_qubo()
+    #     elif model=="partition_difference":
+    #         self.qubo = {
+    #             ((i,a),(j,b)) :
+    #             1-self.similarity_matrix[(i,j)] if (i<j and a==b)
+    #             else self.similarity_matrix[(i,j)] if  (i<j and a<b)
+    #             else 0
+    #             for i in range(0,self.n_points-1) 
+    #             for j in range(i+1,self.n_points)
+    #             for a in range(0,self.n_clusters)
+    #             for b in range(a,self.n_clusters)
+    #         }
+    #         self.indexed_qubo = self.qubo_to_indexed_qubo()
+    #     else:
+    #         print("Please select the Ising model of pairwise_similarity-based or partition_difference")
+
+    def _omit_zero_coefficients(self, qb):
+        return {k: v for k, v in qb.items() if v != 0}

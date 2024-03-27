@@ -1,9 +1,9 @@
 numpy
 scipy
-scikit-learn
-
-dwave-system
-dwave-qbsolv
-dwave-neal
-amplify
 matplotlib
+
+pyqubo==1.4.0
+# dwave-ocean-sdk
+amplify
+# openqaoa==0.2.5
+#openjij

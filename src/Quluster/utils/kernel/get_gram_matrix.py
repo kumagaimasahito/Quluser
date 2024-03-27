@@ -1,8 +1,6 @@
 import numpy as np
 
 def get_gram_matrix(kernel_matrix, n_points, mode="numpy"):
-    kernel_matrix = convert(kernel_matrix, mode=mode)
-    
     if mode == "numpy":
         mean_row = np.mean(kernel_matrix, axis=1).reshape(n_points,1)
         mean_col = np.mean(kernel_matrix, axis=0).reshape(1,n_points)

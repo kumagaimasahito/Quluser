@@ -1,6 +1,7 @@
 from . import ConstrainedClustering
 from .utils import measure
-from .utils import get_kronecker_qubo_kernel, get_kronecker_pubo_kernel
+from .utils import get_kronecker_qubo_kernel
+# from .utils import get_kronecker_pubo_kernel
 from .utils.kernel import get_gram_matrix
 from .utils.kernel.core import get_gaussian_matrix, get_square_distance_matrix
 
@@ -48,18 +49,18 @@ class KernelClustering(ConstrainedClustering):
                 for b in range(a,self.n_clusters)
             }
         else:
-            self.indexed_qubo = get_kronecker_qubo_kernel(self.gram_matrix, lam, self.n_points, self.n_clusters, mode=mode)
+            self.indexed_qubo = get_kronecker_qubo_kernel(self.gram_matrix, lam, self.n_points, self.n_clusters)
 
-    @measure
-    def set_pubo(self, mode="numpy"):
-        if mode == "iterance":
-            self.qubo = {
-                ((i,a),(j,a)) : 
-                -(self.gram_matrix[i,j]+self.gram_matrix[j,i]) if i<j
-                else -self.gram_matrix[i,j]
-                for i in range(0,self.n_points) 
-                for j in range(i,self.n_points)
-                for a in range(0,self.n_clusters)
-            }
-        else:
-            self.indexed_qubo = get_kronecker_pubo_kernel(self.gram_matrix, self.n_clusters, mode=mode)
+    # @measure
+    # def set_pubo(self, mode="numpy"):
+    #     if mode == "iterance":
+    #         self.qubo = {
+    #             ((i,a),(j,a)) : 
+    #             -(self.gram_matrix[i,j]+self.gram_matrix[j,i]) if i<j
+    #             else -self.gram_matrix[i,j]
+    #             for i in range(0,self.n_points) 
+    #             for j in range(i,self.n_points)
+    #             for a in range(0,self.n_clusters)
+    #         }
+    #     else:
+    #         self.indexed_qubo = get_kronecker_pubo_kernel(self.gram_matrix, self.n_clusters)

@@ -1,9 +1,10 @@
 from pyqubo import Array, Constraint
 from scipy.spatial import distance
-from .utils import min_max, standardization, BaseSolver, pyqubo_to_qubo, measure
-from .utils import get_kronecker_qubo_euclidean, get_kronecker_pubo_euclidean
+from .utils import min_max, standardization, Base, pyqubo_to_qubo, measure
+from .utils import get_kronecker_qubo_euclidean
+# from .utils import get_kronecker_pubo_euclidean
 
-class CombinatorialClustering(BaseSolver):
+class CombinatorialClustering(Base):
     @measure
     def __init__(self, *, data, n_clusters, metric='euclidean'):
         self.data = data
@@ -31,8 +32,9 @@ class CombinatorialClustering(BaseSolver):
         qbit = Array.create('qbit', shape=(self.n_points, self.n_clusters), vartype='BINARY')
         H = 0.5 * sum(dist[i,j] * qbit[i,a] * qbit[j,a] for i in range(self.n_points) for j in range(self.n_points) for a in range(self.n_clusters)) + M * Constraint(sum((sum(qbit[i,a] for a in range(self.n_clusters)) - 1) ** 2 for i in range(self.n_points)), label='ONE_HOT')
         model = H.compile()
-        self.qubo, _ = model.to_qubo()
-        self.qubo = pyqubo_to_qubo(self.qubo)
+        qubo_by_pyqubo, _ = model.to_qubo()
+        self.qubo = pyqubo_to_qubo(qubo_by_pyqubo)
+        self.indexed_qubo = self.qubo_to_indexed_qubo()
 
     @measure
     def set_qubo(self, scaling="normal", lam_rate=1, mode="numpy"):
@@ -51,8 +53,9 @@ class CombinatorialClustering(BaseSolver):
                 for b in range(a,self.n_clusters)
             }
             self.qubo = self._omit_zero_coefficients(self.qubo) # 非ゼロ要素だけのQUBO
+            self.indexed_qubo = self.qubo_to_indexed_qubo()
         else:
-            self.indexed_qubo = get_kronecker_qubo_euclidean(dist, M, self.n_points, self.n_clusters, mode=mode)
+            self.indexed_qubo = get_kronecker_qubo_euclidean(dist, M, self.n_points, self.n_clusters)
 
     def _scale_dist(self, scaling):
         M = self.lam
@@ -71,3 +74,5 @@ class CombinatorialClustering(BaseSolver):
             print("scaling failed.")
         return dist, M
         
+    def _omit_zero_coefficients(self, qb):
+        return {k: v for k, v in qb.items() if v != 0}
